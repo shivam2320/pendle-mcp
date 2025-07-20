@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerHelloTool } from "./tools/hello-world.js";
 import { registerHelloPrompt } from "./prompts/hello-world.js";
 import { registerHelloResource } from "./resources/hello-world.js";
+import { registerMintTools } from "./tools/mint.js";
+import { registerSwapTools } from "./tools/swap.js";
 import {
   createWalletClient,
   http,
@@ -14,7 +16,7 @@ import { createMcpServer, getAuthContext } from "@osiris-ai/sdk";
 import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createSuccessResponse, createErrorResponse } from "./utils/types.js";
-import { SwapData, SwapParams } from "./schema/index.js";
+import { SwapData, SwapParams, MintData, MintParams } from "./schema/index.js";
 import { MARKET_ADDRESS } from "./utils/constants.js";
 import { callSDK } from "./utils/helper.js";
 import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
@@ -148,10 +150,11 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const { receiver, slippage, tokenIn, tokenOut, amountIn } = params;
+      const { receiver, slippage, tokenIn, tokenOut, amountIn, chainId } =
+        params;
 
       const resp = await callSDK<SwapData>(
-        `/v2/sdk/1/markets/${MARKET_ADDRESS}/swap`,
+        `/v2/sdk/${chainId}/markets/${MARKET_ADDRESS}/swap`,
         {
           receiver,
           slippage,
@@ -195,9 +198,106 @@ export class PendleMCP {
     }
   }
 
+  async mint(params: MintParams): Promise<CallToolResult> {
+    try {
+      const { token, context } = getAuthContext("osiris");
+      if (!token || !context) {
+        throw new Error("No token or context found");
+      }
+      console.log(
+        JSON.stringify(
+          {
+            hubBaseUrl: this.hubBaseUrl,
+            accessToken: token.access_token,
+            deploymentId: context.deploymentId,
+          },
+          null,
+          2
+        )
+      );
+
+      const wallet = this.walletToSession[context.sessionId];
+      if (!wallet) {
+        const error = new Error(
+          "No wallet found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoWalletFoundError";
+        return createErrorResponse(error);
+      }
+
+      const client = new EVMWalletClient(
+        this.hubBaseUrl,
+        token.access_token,
+        context.deploymentId
+      );
+
+      const account = await client.getViemAccount(wallet, this.chain);
+      if (!account) {
+        const error = new Error(
+          "No account found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoAccountFoundError";
+        return createErrorResponse(error);
+      }
+
+      const {
+        receiver,
+        mint_token,
+        slippage,
+        tokenIn,
+        amountIn,
+        chainId = "1",
+      } = params;
+
+      const resp = await callSDK<MintData>(`/v2/sdk/${chainId}/mint`, {
+        receiver,
+        mint_token,
+        slippage,
+        tokenIn,
+        amountIn,
+      });
+
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const preparedTx = await walletClient.prepareTransactionRequest({
+        to: resp.data.tx.to as `0x${string}`,
+        abi: ROUTER_ABI,
+        data: resp.data.tx.data as `0x${string}`,
+        gas: 15000000n,
+      });
+
+      const serializedTx = serializeTransaction(preparedTx as any);
+      const signedTx = await client.signTransaction(
+        ROUTER_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
+      return createSuccessResponse("Successfully minted tokens", {
+        hash: hash,
+        amountOut: resp.data.data.amountOut,
+        priceImpact: resp.data.data.priceImpact,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Mint failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
     registerHelloResource(server);
+    registerMintTools(server, this);
+    registerSwapTools(server, this);
   }
 }
