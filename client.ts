@@ -12,6 +12,7 @@ import { registerRemoveLiquidityDualTools } from "./tools/remove-liquidity-dual.
 import { registerRedeemTools } from "./tools/redeem.js";
 import { registerAssetPricesTools } from "./tools/asset-prices.js";
 import { registerAssetsTools } from "./tools/assets.js";
+import { registerMarketsTools } from "./tools/markets.js";
 import {
   createWalletClient,
   http,
@@ -47,6 +48,8 @@ import {
   GetHistoricalPricesParams,
   GetAssetsData,
   GetAssetsParams,
+  GetMarketsData,
+  GetMarketsParams,
 } from "./schema/index.js";
 
 import { callSDK } from "./utils/helper.js";
@@ -1061,6 +1064,27 @@ export class PendleMCP {
     }
   }
 
+  async getMarkets(params: GetMarketsParams): Promise<CallToolResult> {
+    try {
+      const { chainId } = params;
+
+      const targetPath = `/v1/${chainId}/markets/active`;
+
+      const resp = await callSDK<GetMarketsData>(targetPath);
+
+      return createSuccessResponse("Successfully retrieved active markets", {
+        markets: resp.data.data.markets,
+        chainId,
+        total: resp.data.data.markets.length,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Get markets failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -1075,5 +1099,6 @@ export class PendleMCP {
     registerRedeemTools(server, this);
     registerAssetPricesTools(server, this);
     registerAssetsTools(server, this);
+    registerMarketsTools(server, this);
   }
 }

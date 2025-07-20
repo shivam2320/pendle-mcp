@@ -112,6 +112,10 @@ export const GetAssetsSchema = {
   q: z.string().optional(),
 };
 
+export const GetMarketsSchema = {
+  chainId: z.number(),
+};
+
 export interface SwapParams {
   receiver: string;
   market: string;
@@ -216,6 +220,10 @@ export interface GetAssetsParams {
   q?: string;
 }
 
+export interface GetMarketsParams {
+  chainId: number;
+}
+
 export interface AssetInfo {
   name: string;
   decimals: number;
@@ -223,6 +231,16 @@ export interface AssetInfo {
   symbol: string;
   tags: string[];
   expiry: string;
+}
+
+export interface MarketInfo {
+  name: string;
+  address: string;
+  expiry: string;
+  pt: string;
+  yt: string;
+  sy: string;
+  underlyingAsset: string;
 }
 
 export type SwapData = { amountOut: string; priceImpact: number };
@@ -265,3 +283,5 @@ export type GetHistoricalPricesData = {
 };
 
 export type GetAssetsData = { assets: AssetInfo[] };
+
+export type GetMarketsData = { markets: MarketInfo[] };
