@@ -26,6 +26,19 @@ export const MintSchema = {
   chainId: z.string().optional().default("1"),
 };
 
+export const TransferLiquiditySchema = {
+  receiver: z.string(),
+  slippage: z.number(),
+  srcMarket: z.string(),
+  dstMarket: z.string(),
+  lpAmount: z.string(),
+  ptAmount: z.string(),
+  ytAmount: z.string(),
+  zpi: z.boolean().optional().default(false),
+  aggregators: z.string().optional(),
+  chainId: z.string().optional().default("1"),
+};
+
 export interface SwapParams {
   receiver: string;
   slippage: number;
@@ -44,6 +57,25 @@ export interface MintParams {
   chainId?: string;
 }
 
+export interface TransferLiquidityParams {
+  receiver: string;
+  slippage: number;
+  srcMarket: string;
+  dstMarket: string;
+  lpAmount: string;
+  ptAmount: string;
+  ytAmount: string;
+  zpi?: boolean;
+  aggregators?: string;
+  chainId?: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
+
+export type TransferLiquidityData = {
+  amountLpOut: string;
+  amountYtOut?: string;
+  priceImpact: number;
+};
