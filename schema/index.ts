@@ -50,6 +50,16 @@ export const AddLiquiditySchema = {
   chainId: z.string().optional().default("1"),
 };
 
+export const AddLiquidityDualSchema = {
+  receiver: z.string(),
+  slippage: z.number(),
+  market: z.string(),
+  tokenIn: z.string(),
+  amountTokenIn: z.string(),
+  amountPtIn: z.string(),
+  chainId: z.string().optional().default("1"),
+};
+
 export interface SwapParams {
   receiver: string;
   market: string;
@@ -92,6 +102,16 @@ export interface AddLiquidityParams {
   chainId?: string;
 }
 
+export interface AddLiquidityDualParams {
+  receiver: string;
+  slippage: number;
+  market: string;
+  tokenIn: string;
+  amountTokenIn: string;
+  amountPtIn: string;
+  chainId?: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
@@ -107,3 +127,5 @@ export type AddLiquidityData = {
   amountYtOut?: string;
   priceImpact: number;
 };
+
+export type AddLiquidityDualData = { amountOut: string; priceImpact: number };
