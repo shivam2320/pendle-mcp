@@ -1,0 +1,1 @@
+export const MARKET_ADDRESS = "0x34280882267ffa6383b363e278b027be083bbe3b";

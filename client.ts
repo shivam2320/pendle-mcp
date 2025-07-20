@@ -2,12 +2,20 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerHelloTool } from "./tools/hello-world.js";
 import { registerHelloPrompt } from "./prompts/hello-world.js";
 import { registerHelloResource } from "./resources/hello-world.js";
-import { createPublicClient, http, PublicClient } from "viem";
+import {
+  createWalletClient,
+  http,
+  createPublicClient,
+  PublicClient,
+} from "viem";
 import { mainnet } from "viem/chains";
 import { createMcpServer, getAuthContext } from "@osiris-ai/sdk";
 import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createSuccessResponse, createErrorResponse } from "./utils/types.js";
+import { SwapData, SwapParams } from "./schema/index.js";
+import { MARKET_ADDRESS } from "./utils/constants.js";
+import { callSDK } from "./utils/helper.js";
 
 export class PendleMCP {
   hubBaseUrl: string;
@@ -93,6 +101,79 @@ export class PendleMCP {
     } catch (error: any) {
       const errorMessage = error.message || "Failed to choose wallet";
       return createErrorResponse(errorMessage);
+    }
+  }
+
+  async swap(params: SwapParams): Promise<CallToolResult> {
+    try {
+      const { token, context } = getAuthContext("osiris");
+      if (!token || !context) {
+        throw new Error("No token or context found");
+      }
+      console.log(
+        JSON.stringify(
+          {
+            hubBaseUrl: this.hubBaseUrl,
+            accessToken: token.access_token,
+            deploymentId: context.deploymentId,
+          },
+          null,
+          2
+        )
+      );
+
+      const wallet = this.walletToSession[context.sessionId];
+      if (!wallet) {
+        const error = new Error(
+          "No wallet found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoWalletFoundError";
+        return createErrorResponse(error);
+      }
+
+      const client = new EVMWalletClient(
+        this.hubBaseUrl,
+        token.access_token,
+        context.deploymentId
+      );
+
+      const account = await client.getViemAccount(wallet, this.chain);
+      if (!account) {
+        const error = new Error(
+          "No account found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoAccountFoundError";
+        return createErrorResponse(error);
+      }
+
+      const { receiver, slippage, tokenIn, tokenOut, amountIn } = params;
+
+      const resp = await callSDK<SwapData>(
+        `/v2/sdk/1/markets/${MARKET_ADDRESS}/swap`,
+        {
+          receiver,
+          slippage,
+          tokenIn,
+          tokenOut,
+          amountIn,
+        }
+      );
+
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const hash = await walletClient.sendTransaction(resp.data.tx as any);
+      return createSuccessResponse("Successfully swapped tokens", {
+        hash: hash,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Swap failed: ${error}`);
     }
   }
 
