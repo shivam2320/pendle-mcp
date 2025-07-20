@@ -11,6 +11,7 @@ import { registerRemoveLiquidityTools } from "./tools/remove-liquidity.js";
 import { registerRemoveLiquidityDualTools } from "./tools/remove-liquidity-dual.js";
 import { registerRedeemTools } from "./tools/redeem.js";
 import { registerAssetPricesTools } from "./tools/asset-prices.js";
+import { registerAssetsTools } from "./tools/assets.js";
 import {
   createWalletClient,
   http,
@@ -44,6 +45,8 @@ import {
   GetAssetPricesParams,
   GetHistoricalPricesData,
   GetHistoricalPricesParams,
+  GetAssetsData,
+  GetAssetsParams,
 } from "./schema/index.js";
 
 import { callSDK } from "./utils/helper.js";
@@ -1016,6 +1019,48 @@ export class PendleMCP {
     }
   }
 
+  async getAssets(params: GetAssetsParams): Promise<CallToolResult> {
+    try {
+      const {
+        chainId,
+        order_by,
+        skip,
+        limit,
+        is_expired,
+        zappable,
+        type,
+        address,
+        q,
+      } = params;
+
+      const query: any = {};
+
+      if (order_by) query.order_by = order_by;
+      if (skip !== undefined) query.skip = skip;
+      if (limit !== undefined) query.limit = limit;
+      if (is_expired !== undefined) query.is_expired = is_expired;
+      if (zappable !== undefined) query.zappable = zappable;
+      if (type) query.type = type;
+      if (address) query.address = address;
+      if (q) query.q = q;
+
+      const targetPath = `/v3/${chainId}/assets/all`;
+
+      const resp = await callSDK<GetAssetsData>(targetPath, query);
+
+      return createSuccessResponse("Successfully retrieved assets", {
+        assets: resp.data.data.assets,
+        chainId,
+        total: resp.data.data.assets.length,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Get assets failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -1029,5 +1074,6 @@ export class PendleMCP {
     registerRemoveLiquidityDualTools(server, this);
     registerRedeemTools(server, this);
     registerAssetPricesTools(server, this);
+    registerAssetsTools(server, this);
   }
 }

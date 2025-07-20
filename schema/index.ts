@@ -100,6 +100,18 @@ export const GetHistoricalPricesSchema = {
   timestampEnd: z.string().optional(),
 };
 
+export const GetAssetsSchema = {
+  chainId: z.number(),
+  order_by: z.string().optional(),
+  skip: z.number().optional(),
+  limit: z.number().optional(),
+  is_expired: z.boolean().optional(),
+  zappable: z.boolean().optional(),
+  type: z.string().optional(),
+  address: z.string().optional(),
+  q: z.string().optional(),
+};
+
 export interface SwapParams {
   receiver: string;
   market: string;
@@ -192,6 +204,27 @@ export interface GetHistoricalPricesParams {
   timestampEnd?: string;
 }
 
+export interface GetAssetsParams {
+  chainId: number;
+  order_by?: string;
+  skip?: number;
+  limit?: number;
+  is_expired?: boolean;
+  zappable?: boolean;
+  type?: string;
+  address?: string;
+  q?: string;
+}
+
+export interface AssetInfo {
+  name: string;
+  decimals: number;
+  address: string;
+  symbol: string;
+  tags: string[];
+  expiry: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
@@ -230,3 +263,5 @@ export type GetHistoricalPricesData = {
   timestamp_end: number;
   results: string;
 };
+
+export type GetAssetsData = { assets: AssetInfo[] };
