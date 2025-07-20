@@ -78,6 +78,15 @@ export const RemoveLiquidityDualSchema = {
   chainId: z.string().optional().default("1"),
 };
 
+export const RedeemSchema = {
+  receiver: z.string(),
+  slippage: z.number(),
+  redeem_token: z.string(),
+  amountIn: z.string(),
+  tokenOut: z.string(),
+  chainId: z.string().optional().default("1"),
+};
+
 export interface SwapParams {
   receiver: string;
   market: string;
@@ -148,6 +157,15 @@ export interface RemoveLiquidityDualParams {
   chainId?: string;
 }
 
+export interface RedeemParams {
+  receiver: string;
+  slippage: number;
+  redeem_token: string;
+  amountIn: string;
+  tokenOut: string;
+  chainId?: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
@@ -173,3 +191,5 @@ export type RemoveLiquidityDualData = {
   amountPtOut: string;
   priceImpact: number;
 };
+
+export type RedeemData = { amountOut: string; priceImpact: number };

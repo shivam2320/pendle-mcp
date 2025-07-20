@@ -9,6 +9,7 @@ import { registerAddLiquidityTools } from "./tools/add-liquidity.js";
 import { registerAddLiquidityDualTools } from "./tools/add-liquidity-dual.js";
 import { registerRemoveLiquidityTools } from "./tools/remove-liquidity.js";
 import { registerRemoveLiquidityDualTools } from "./tools/remove-liquidity-dual.js";
+import { registerRedeemTools } from "./tools/redeem.js";
 import {
   createWalletClient,
   http,
@@ -36,6 +37,8 @@ import {
   RemoveLiquidityParams,
   RemoveLiquidityDualData,
   RemoveLiquidityDualParams,
+  RedeemData,
+  RedeemParams,
 } from "./schema/index.js";
 import { callSDK } from "./utils/helper.js";
 import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
@@ -840,6 +843,101 @@ export class PendleMCP {
     }
   }
 
+  async redeem(params: RedeemParams): Promise<CallToolResult> {
+    try {
+      const { token, context } = getAuthContext("osiris");
+      if (!token || !context) {
+        throw new Error("No token or context found");
+      }
+      console.log(
+        JSON.stringify(
+          {
+            hubBaseUrl: this.hubBaseUrl,
+            accessToken: token.access_token,
+            deploymentId: context.deploymentId,
+          },
+          null,
+          2
+        )
+      );
+
+      const wallet = this.walletToSession[context.sessionId];
+      if (!wallet) {
+        const error = new Error(
+          "No wallet found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoWalletFoundError";
+        return createErrorResponse(error);
+      }
+
+      const client = new EVMWalletClient(
+        this.hubBaseUrl,
+        token.access_token,
+        context.deploymentId
+      );
+
+      const account = await client.getViemAccount(wallet, this.chain);
+      if (!account) {
+        const error = new Error(
+          "No account found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoAccountFoundError";
+        return createErrorResponse(error);
+      }
+
+      const {
+        receiver,
+        slippage,
+        redeem_token,
+        amountIn,
+        tokenOut,
+        chainId = "1",
+      } = params;
+
+      const resp = await callSDK<RedeemData>(`/v2/sdk/${chainId}/redeem`, {
+        receiver,
+        slippage,
+        yt: redeem_token,
+        amountIn,
+        tokenOut,
+      });
+
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const preparedTx = await walletClient.prepareTransactionRequest({
+        to: resp.data.tx.to as `0x${string}`,
+        abi: ROUTER_ABI,
+        data: resp.data.tx.data as `0x${string}`,
+        gas: 15000000n,
+      });
+
+      const serializedTx = serializeTransaction(preparedTx as any);
+      const signedTx = await client.signTransaction(
+        ROUTER_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
+      return createSuccessResponse("Successfully redeemed tokens", {
+        hash: hash,
+        amountOut: resp.data.data.amountOut,
+        priceImpact: resp.data.data.priceImpact,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Redeem failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -851,5 +949,6 @@ export class PendleMCP {
     registerAddLiquidityDualTools(server, this);
     registerRemoveLiquidityTools(server, this);
     registerRemoveLiquidityDualTools(server, this);
+    registerRedeemTools(server, this);
   }
 }
