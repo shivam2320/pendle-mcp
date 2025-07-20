@@ -7,6 +7,7 @@ import {
   http,
   createPublicClient,
   PublicClient,
+  serializeTransaction,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { createMcpServer, getAuthContext } from "@osiris-ai/sdk";
@@ -16,6 +17,7 @@ import { createSuccessResponse, createErrorResponse } from "./utils/types.js";
 import { SwapData, SwapParams } from "./schema/index.js";
 import { MARKET_ADDRESS } from "./utils/constants.js";
 import { callSDK } from "./utils/helper.js";
+import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
 
 export class PendleMCP {
   hubBaseUrl: string;
@@ -165,7 +167,23 @@ export class PendleMCP {
         transport: http(),
       });
 
-      const hash = await walletClient.sendTransaction(resp.data.tx as any);
+      const preparedTx = await walletClient.prepareTransactionRequest({
+        to: resp.data.tx.to as `0x${string}`,
+        abi: ROUTER_ABI,
+        data: resp.data.tx.data as `0x${string}`,
+        gas: 15000000n,
+      });
+
+      const serializedTx = serializeTransaction(preparedTx as any);
+      const signedTx = await client.signTransaction(
+        ROUTER_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
       return createSuccessResponse("Successfully swapped tokens", {
         hash: hash,
       });
