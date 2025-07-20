@@ -1,0 +1,35 @@
+{
+  "id": "pendle-mcp",
+  "version": "1.0.0",
+  "description": "pendle-mcp",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No tests specified' && exit 0"
+  },
+  "keywords": [
+    "mcp",
+    "osiris",
+    "server",
+    "authentication"
+  ],
+  "author": "Shivam <alekarshivam23@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@osiris-ai/sdk": "latest",
+    "@modelcontextprotocol/sdk": "latest",
+    "dotenv": "latest",
+    "zod": "latest",
+    "@noble/curves": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "nodemon": "latest",
+    "typescript": "latest"
+  }
+}
