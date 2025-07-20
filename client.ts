@@ -5,6 +5,7 @@ import { registerHelloResource } from "./resources/hello-world.js";
 import { registerMintTools } from "./tools/mint.js";
 import { registerSwapTools } from "./tools/swap.js";
 import { registerTransferLiquidityTools } from "./tools/transfer-liquidity.js";
+import { registerAddLiquidityTools } from "./tools/add-liquidity.js";
 import {
   createWalletClient,
   http,
@@ -24,6 +25,8 @@ import {
   MintParams,
   TransferLiquidityData,
   TransferLiquidityParams,
+  AddLiquidityData,
+  AddLiquidityParams,
 } from "./schema/index.js";
 import { MARKET_ADDRESS } from "./utils/constants.js";
 import { callSDK } from "./utils/helper.js";
@@ -158,11 +161,18 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const { receiver, slippage, tokenIn, tokenOut, amountIn, chainId } =
-        params;
+      const {
+        receiver,
+        slippage,
+        market,
+        tokenIn,
+        tokenOut,
+        amountIn,
+        chainId,
+      } = params;
 
       const resp = await callSDK<SwapData>(
-        `/v2/sdk/${chainId}/markets/${MARKET_ADDRESS}/swap`,
+        `/v2/sdk/${chainId}/markets/${market}/swap`,
         {
           receiver,
           slippage,
@@ -417,6 +427,111 @@ export class PendleMCP {
     }
   }
 
+  async addLiquidity(params: AddLiquidityParams): Promise<CallToolResult> {
+    try {
+      const { token, context } = getAuthContext("osiris");
+      if (!token || !context) {
+        throw new Error("No token or context found");
+      }
+      console.log(
+        JSON.stringify(
+          {
+            hubBaseUrl: this.hubBaseUrl,
+            accessToken: token.access_token,
+            deploymentId: context.deploymentId,
+          },
+          null,
+          2
+        )
+      );
+
+      const wallet = this.walletToSession[context.sessionId];
+      if (!wallet) {
+        const error = new Error(
+          "No wallet found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoWalletFoundError";
+        return createErrorResponse(error);
+      }
+
+      const client = new EVMWalletClient(
+        this.hubBaseUrl,
+        token.access_token,
+        context.deploymentId
+      );
+
+      const account = await client.getViemAccount(wallet, this.chain);
+      if (!account) {
+        const error = new Error(
+          "No account found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoAccountFoundError";
+        return createErrorResponse(error);
+      }
+
+      const {
+        receiver,
+        slippage,
+        market,
+        tokenIn,
+        amountIn,
+        zpi = false,
+        chainId = "1",
+      } = params;
+
+      const requestParams: any = {
+        receiver,
+        slippage,
+        tokenIn,
+        amountIn,
+      };
+
+      if (zpi) {
+        requestParams.zpi = zpi;
+      }
+
+      const resp = await callSDK<AddLiquidityData>(
+        `/v2/sdk/${chainId}/markets/${market}/add-liquidity`,
+        requestParams
+      );
+
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const preparedTx = await walletClient.prepareTransactionRequest({
+        to: resp.data.tx.to as `0x${string}`,
+        abi: ROUTER_ABI,
+        data: resp.data.tx.data as `0x${string}`,
+        gas: 15000000n,
+      });
+
+      const serializedTx = serializeTransaction(preparedTx as any);
+      const signedTx = await client.signTransaction(
+        ROUTER_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
+      return createSuccessResponse("Successfully added liquidity", {
+        hash: hash,
+        amountLpOut: resp.data.data.amountLpOut,
+        amountYtOut: resp.data.data.amountYtOut,
+        priceImpact: resp.data.data.priceImpact,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Add liquidity failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -424,5 +539,6 @@ export class PendleMCP {
     registerMintTools(server, this);
     registerSwapTools(server, this);
     registerTransferLiquidityTools(server, this);
+    registerAddLiquidityTools(server, this);
   }
 }

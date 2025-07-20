@@ -9,51 +9,54 @@ import {
   LOG_LEVELS,
 } from "../utils/types.js";
 import { PendleMCP } from "../client.js";
-import { SwapSchema } from "../schema/index.js";
+import { AddLiquiditySchema } from "../schema/index.js";
+
 const logger = new McpLogger("pendle-mcp", LOG_LEVELS.INFO);
 
-export function registerSwapTools(
+export function registerAddLiquidityTools(
   server: McpServer,
   pendleMCP: PendleMCP
 ): void {
-  logger.info("📝 Registering swap tools...");
+  logger.info("📝 Registering add liquidity tools...");
 
   server.tool(
-    "swap",
-    "Swap tokens",
-    SwapSchema,
-    async ({ receiver, slippage, market, tokenIn, tokenOut, amountIn }) => {
+    "add_liquidity",
+    "Add liquidity to Pendle markets",
+    AddLiquiditySchema,
+    async ({ receiver, slippage, market, tokenIn, amountIn, zpi, chainId }) => {
       try {
-        logger.toolCalled("swap", {
+        logger.toolCalled("add_liquidity", {
           receiver,
           slippage,
           market,
           tokenIn,
-          tokenOut,
           amountIn,
+          zpi,
+          chainId,
         });
 
-        const result = await pendleMCP.swap({
+        const result = await pendleMCP.addLiquidity({
           receiver,
           slippage,
           market,
           tokenIn,
-          tokenOut,
           amountIn,
+          zpi,
+          chainId,
         });
 
-        logger.toolCompleted("swap");
+        logger.toolCompleted("add_liquidity");
         return createSuccessResponse(
-          `✅ Swap tokens successfully for ${receiver}`,
+          `✅ Add liquidity successfully for ${receiver}`,
           result
         );
       } catch (error) {
-        return handleToolError("swap", error);
+        return handleToolError("add_liquidity", error);
       }
     }
   );
 
-  logger.info("✅ All swap tools registered successfully");
+  logger.info("✅ All add liquidity tools registered successfully");
 }
 
 /**

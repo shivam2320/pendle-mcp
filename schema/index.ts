@@ -10,6 +10,7 @@ export const HelloPromptSchema = {
 
 export const SwapSchema = {
   receiver: z.string(),
+  market: z.string(),
   slippage: z.number(),
   tokenIn: z.string(),
   tokenOut: z.string(),
@@ -39,8 +40,19 @@ export const TransferLiquiditySchema = {
   chainId: z.string().optional().default("1"),
 };
 
+export const AddLiquiditySchema = {
+  receiver: z.string(),
+  slippage: z.number(),
+  market: z.string(),
+  tokenIn: z.string(),
+  amountIn: z.string(),
+  zpi: z.boolean().optional().default(false),
+  chainId: z.string().optional().default("1"),
+};
+
 export interface SwapParams {
   receiver: string;
+  market: string;
   slippage: number;
   tokenIn: string;
   tokenOut: string;
@@ -70,11 +82,27 @@ export interface TransferLiquidityParams {
   chainId?: string;
 }
 
+export interface AddLiquidityParams {
+  receiver: string;
+  slippage: number;
+  market: string;
+  tokenIn: string;
+  amountIn: string;
+  zpi?: boolean;
+  chainId?: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
 
 export type TransferLiquidityData = {
+  amountLpOut: string;
+  amountYtOut?: string;
+  priceImpact: number;
+};
+
+export type AddLiquidityData = {
   amountLpOut: string;
   amountYtOut?: string;
   priceImpact: number;
