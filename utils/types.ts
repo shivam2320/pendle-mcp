@@ -194,3 +194,22 @@ export const createPermissionDeniedResponse = (
     ],
   };
 };
+
+/**
+ * Asset prices response data type
+ */
+export interface GetAssetPricesResponse {
+  prices: Record<string, number>;
+}
+
+/**
+ * Historical prices response data type
+ */
+export interface GetHistoricalPricesResponse {
+  total: number;
+  currency: string;
+  timeFrame: string;
+  timestamp_start: number;
+  timestamp_end: number;
+  results: string;
+}

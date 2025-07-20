@@ -87,6 +87,19 @@ export const RedeemSchema = {
   chainId: z.string().optional().default("1"),
 };
 
+export const GetAssetPricesSchema = {
+  chainId: z.number(),
+  addresses: z.string().optional(),
+};
+
+export const GetHistoricalPricesSchema = {
+  chainId: z.number(),
+  address: z.string(),
+  timeFrame: z.enum(["hour", "day", "week"]).optional().default("day"),
+  timestampStart: z.string().optional(),
+  timestampEnd: z.string().optional(),
+};
+
 export interface SwapParams {
   receiver: string;
   market: string;
@@ -166,6 +179,19 @@ export interface RedeemParams {
   chainId?: string;
 }
 
+export interface GetAssetPricesParams {
+  chainId: number;
+  addresses?: string;
+}
+
+export interface GetHistoricalPricesParams {
+  chainId: number;
+  address: string;
+  timeFrame?: "hour" | "day" | "week";
+  timestampStart?: string;
+  timestampEnd?: string;
+}
+
 export type SwapData = { amountOut: string; priceImpact: number };
 
 export type MintData = { amountOut: string; priceImpact: number };
@@ -193,3 +219,14 @@ export type RemoveLiquidityDualData = {
 };
 
 export type RedeemData = { amountOut: string; priceImpact: number };
+
+export type GetAssetPricesData = { prices: Record<string, number> };
+
+export type GetHistoricalPricesData = {
+  total: number;
+  currency: string;
+  timeFrame: string;
+  timestamp_start: number;
+  timestamp_end: number;
+  results: string;
+};

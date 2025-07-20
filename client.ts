@@ -10,6 +10,7 @@ import { registerAddLiquidityDualTools } from "./tools/add-liquidity-dual.js";
 import { registerRemoveLiquidityTools } from "./tools/remove-liquidity.js";
 import { registerRemoveLiquidityDualTools } from "./tools/remove-liquidity-dual.js";
 import { registerRedeemTools } from "./tools/redeem.js";
+import { registerAssetPricesTools } from "./tools/asset-prices.js";
 import {
   createWalletClient,
   http,
@@ -39,7 +40,12 @@ import {
   RemoveLiquidityDualParams,
   RedeemData,
   RedeemParams,
+  GetAssetPricesData,
+  GetAssetPricesParams,
+  GetHistoricalPricesData,
+  GetHistoricalPricesParams,
 } from "./schema/index.js";
+
 import { callSDK } from "./utils/helper.js";
 import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
 
@@ -938,6 +944,78 @@ export class PendleMCP {
     }
   }
 
+  async getAssetPrices(params: GetAssetPricesParams): Promise<CallToolResult> {
+    try {
+      const { chainId, addresses } = params;
+
+      const query: any = {};
+      if (addresses) {
+        query.addresses = addresses;
+      }
+
+      const targetPath = `/v1/${chainId}/assets/prices`;
+
+      const resp = await callSDK<GetAssetPricesData>(targetPath, query);
+
+      return createSuccessResponse("Successfully retrieved asset prices", {
+        prices: resp.data.data.prices,
+        chainId,
+        addresses: addresses || "all",
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Get asset prices failed: ${error}`);
+    }
+  }
+
+  async getHistoricalPrices(
+    params: GetHistoricalPricesParams
+  ): Promise<CallToolResult> {
+    try {
+      const {
+        chainId,
+        address,
+        timeFrame = "day",
+        timestampStart,
+        timestampEnd,
+      } = params;
+
+      const query: any = {
+        timeFrame,
+      };
+
+      if (timestampStart) {
+        query.timestampStart = timestampStart;
+      }
+
+      if (timestampEnd) {
+        query.timestampEnd = timestampEnd;
+      }
+
+      const targetPath = `/v4/${chainId}/prices/${address}/ohlcv`;
+
+      const resp = await callSDK<GetHistoricalPricesData>(targetPath, query);
+
+      return createSuccessResponse("Successfully retrieved historical prices", {
+        total: resp.data.data.total,
+        currency: resp.data.data.currency,
+        timeFrame: resp.data.data.timeFrame,
+        timestamp_start: resp.data.data.timestamp_start,
+        timestamp_end: resp.data.data.timestamp_end,
+        results: resp.data.data.results,
+        address,
+        chainId,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Get historical prices failed: ${error}`);
+    }
+  }
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -950,5 +1028,6 @@ export class PendleMCP {
     registerRemoveLiquidityTools(server, this);
     registerRemoveLiquidityDualTools(server, this);
     registerRedeemTools(server, this);
+    registerAssetPricesTools(server, this);
   }
 }
