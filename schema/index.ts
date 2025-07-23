@@ -11,11 +11,11 @@ export const HelloPromptSchema = {
 export const SwapSchema = {
   receiver: z.string(),
   market: z.string(),
-  slippage: z.number(),
+  slippage: z.number().min(0).max(1),
   tokenIn: z.string(),
   tokenOut: z.string(),
   amountIn: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const MintSchema = {
@@ -24,7 +24,7 @@ export const MintSchema = {
   slippage: z.number(),
   tokenIn: z.string(),
   amountIn: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const TransferLiquiditySchema = {
@@ -37,7 +37,7 @@ export const TransferLiquiditySchema = {
   ytAmount: z.string(),
   zpi: z.boolean().optional().default(false),
   aggregators: z.string().optional(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const AddLiquiditySchema = {
@@ -47,7 +47,7 @@ export const AddLiquiditySchema = {
   tokenIn: z.string(),
   amountIn: z.string(),
   zpi: z.boolean().optional().default(false),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const AddLiquidityDualSchema = {
@@ -57,7 +57,7 @@ export const AddLiquidityDualSchema = {
   tokenIn: z.string(),
   amountTokenIn: z.string(),
   amountPtIn: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const RemoveLiquiditySchema = {
@@ -66,7 +66,7 @@ export const RemoveLiquiditySchema = {
   market: z.string(),
   tokenOut: z.string(),
   amountIn: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const RemoveLiquidityDualSchema = {
@@ -75,7 +75,7 @@ export const RemoveLiquidityDualSchema = {
   market: z.string(),
   tokenOut: z.string(),
   amountIn: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const RedeemSchema = {
@@ -84,7 +84,7 @@ export const RedeemSchema = {
   redeem_token: z.string(),
   amountIn: z.string(),
   tokenOut: z.string(),
-  chainId: z.string().optional().default("1"),
+  chainId: z.string().default("1"),
 };
 
 export const GetAssetPricesSchema = {
@@ -123,7 +123,7 @@ export interface SwapParams {
   tokenIn: string;
   tokenOut: string;
   amountIn: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface MintParams {
@@ -132,7 +132,7 @@ export interface MintParams {
   slippage: number;
   tokenIn: string;
   amountIn: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface TransferLiquidityParams {
@@ -145,7 +145,7 @@ export interface TransferLiquidityParams {
   ytAmount: string;
   zpi?: boolean;
   aggregators?: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface AddLiquidityParams {
@@ -155,7 +155,7 @@ export interface AddLiquidityParams {
   tokenIn: string;
   amountIn: string;
   zpi?: boolean;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface AddLiquidityDualParams {
@@ -165,7 +165,7 @@ export interface AddLiquidityDualParams {
   tokenIn: string;
   amountTokenIn: string;
   amountPtIn: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface RemoveLiquidityParams {
@@ -174,7 +174,7 @@ export interface RemoveLiquidityParams {
   market: string;
   tokenOut: string;
   amountIn: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface RemoveLiquidityDualParams {
@@ -183,7 +183,7 @@ export interface RemoveLiquidityDualParams {
   market: string;
   tokenOut: string;
   amountIn: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface RedeemParams {
@@ -192,7 +192,7 @@ export interface RedeemParams {
   redeem_token: string;
   amountIn: string;
   tokenOut: string;
-  chainId?: string;
+  chainId: string;
 }
 
 export interface GetAssetPricesParams {

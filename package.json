@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx index.ts",
+    "dev": "tsx watch index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit",
@@ -22,12 +22,14 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
     "@noble/curves": "latest",
+    "@osiris-ai/postgres-sdk": "^0.1.0",
     "@osiris-ai/sdk": "latest",
     "@osiris-ai/web3-evm-sdk": "^0.1.0",
     "axios": "^1.10.0",
     "dotenv": "latest",
     "pino": "^9.7.0",
-    "viem": "^2.32.1",
+    "pino-pretty": "^13.0.0",
+    "viem": "^2.31.6",
     "zod": "^3.25.67"
   },
   "devDependencies": {

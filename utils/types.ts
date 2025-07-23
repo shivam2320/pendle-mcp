@@ -1,4 +1,5 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { Address } from "viem";
 
 export enum LOG_LEVELS {
   DEBUG = "debug",
@@ -212,4 +213,12 @@ export interface GetHistoricalPricesResponse {
   timestamp_start: number;
   timestamp_end: number;
   results: string;
+}
+
+export interface TokenInfo {
+  address: Address;
+  name: string;
+  symbol: string;
+  decimals: number;
+  totalSupply?: bigint;
 }

@@ -18,13 +18,21 @@ import {
   http,
   createPublicClient,
   PublicClient,
+  getContract,
   serializeTransaction,
+  Address,
+  encodeFunctionData,
+  parseUnits,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { createMcpServer, getAuthContext } from "@osiris-ai/sdk";
 import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { createSuccessResponse, createErrorResponse } from "./utils/types.js";
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  TokenInfo,
+} from "./utils/types.js";
 import {
   SwapData,
   SwapParams,
@@ -54,6 +62,9 @@ import {
 
 import { callSDK } from "./utils/helper.js";
 import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
+import z from "zod";
+import { ERC20_ABI } from "./utils/ERC20_ABI.js";
+import { ROUTER_ADDRESS } from "./utils/constants.js";
 
 export class PendleMCP {
   hubBaseUrl: string;
@@ -142,6 +153,141 @@ export class PendleMCP {
     }
   }
 
+  /**
+   * Get detailed token information
+   */
+  async getTokenInfo(tokenAddress: Address): Promise<TokenInfo> {
+    try {
+      const tokenContract = getContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        client: this.publicClient,
+      });
+
+      const [name, symbol, decimals, totalSupply] = await Promise.all([
+        tokenContract.read.name(),
+        tokenContract.read.symbol(),
+        tokenContract.read.decimals(),
+        tokenContract.read.totalSupply(),
+      ]);
+
+      return {
+        address: tokenAddress,
+        name,
+        symbol,
+        decimals,
+        totalSupply,
+      };
+    } catch (error) {
+      throw new Error(`Failed to get token info: ${error}`);
+    }
+  }
+
+  async approveToken(
+    tokenAddress: Address,
+    amount: bigint
+  ): Promise<CallToolResult> {
+    const { token, context } = getAuthContext("osiris");
+    if (!token || !context) {
+      throw new Error("No token or context found");
+    }
+
+    const wallet = this.walletToSession[context.sessionId];
+    if (!wallet) {
+      const error = new Error(
+        "No wallet found, you need to choose a wallet first with chooseWallet"
+      );
+      error.name = "NoWalletFoundError";
+      return createErrorResponse(error);
+    }
+    const client = new EVMWalletClient(
+      this.hubBaseUrl,
+      token.access_token,
+      context.deploymentId
+    );
+
+    const account = await client.getViemAccount(wallet, this.chain);
+
+    if (!account) {
+      const error = new Error(
+        "No account found, you need to choose a wallet first with chooseWallet"
+      );
+      error.name = "NoAccountFoundError";
+      return createErrorResponse(error);
+    }
+
+    try {
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const tokenInInfo = await this.getTokenInfo(tokenAddress);
+      const amountInWei = parseUnits(amount.toString(), tokenInInfo.decimals);
+
+      const preparedTx = await this.publicClient.prepareTransactionRequest({
+        chain: mainnet,
+        account: account,
+        to: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [ROUTER_ADDRESS, amountInWei],
+        gas: 800000n,
+      });
+      console.log(
+        JSON.stringify(
+          {
+            chain: mainnet,
+            account: account,
+            to: tokenAddress,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            args: [ROUTER_ADDRESS, amountInWei],
+            gas: 8000000n,
+          },
+          (_, v) => (typeof v === "bigint" ? v.toString() : v),
+          2
+        )
+      );
+      console.log(
+        JSON.stringify(
+          preparedTx,
+          (_, v) => (typeof v === "bigint" ? v.toString() : v),
+          2
+        )
+      );
+      const serializedTx = serializeTransaction({
+        ...preparedTx,
+        data: encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [ROUTER_ADDRESS, amountInWei],
+        }),
+      } as any);
+
+      const signedTx = await client.signTransaction(
+        ERC20_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
+      return createSuccessResponse("Successfully approved token", {
+        hash: hash,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      const errorMessage = error.message || "Failed to approve token";
+      return createErrorResponse(errorMessage);
+    }
+  }
+
   async swap(params: SwapParams): Promise<CallToolResult> {
     try {
       const { token, context } = getAuthContext("osiris");
@@ -215,7 +361,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -281,14 +427,8 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const {
-        receiver,
-        mint_token,
-        slippage,
-        tokenIn,
-        amountIn,
-        chainId = "1",
-      } = params;
+      const { receiver, mint_token, slippage, tokenIn, amountIn, chainId } =
+        params;
 
       const resp = await callSDK<MintData>(`/v2/sdk/${chainId}/mint`, {
         receiver,
@@ -308,7 +448,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -388,7 +528,7 @@ export class PendleMCP {
         ytAmount,
         zpi = false,
         aggregators,
-        chainId = "1",
+        chainId,
       } = params;
 
       const requestParams: any = {
@@ -423,7 +563,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -499,7 +639,7 @@ export class PendleMCP {
         tokenIn,
         amountIn,
         zpi = false,
-        chainId = "1",
+        chainId,
       } = params;
 
       const requestParams: any = {
@@ -528,7 +668,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -606,7 +746,7 @@ export class PendleMCP {
         tokenIn,
         amountTokenIn,
         amountPtIn,
-        chainId = "1",
+        chainId,
       } = params;
 
       const resp = await callSDK<AddLiquidityDualData>(
@@ -630,7 +770,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -700,14 +840,8 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const {
-        receiver,
-        slippage,
-        market,
-        tokenOut,
-        amountIn,
-        chainId = "1",
-      } = params;
+      const { receiver, slippage, market, tokenOut, amountIn, chainId } =
+        params;
 
       const resp = await callSDK<RemoveLiquidityData>(
         `/v2/sdk/${chainId}/markets/${market}/remove-liquidity`,
@@ -729,7 +863,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -799,14 +933,8 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const {
-        receiver,
-        slippage,
-        market,
-        tokenOut,
-        amountIn,
-        chainId = "1",
-      } = params;
+      const { receiver, slippage, market, tokenOut, amountIn, chainId } =
+        params;
 
       const resp = await callSDK<RemoveLiquidityDualData>(
         `/v1/sdk/${chainId}/markets/${market}/remove-liquidity-dual`,
@@ -828,7 +956,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -897,14 +1025,8 @@ export class PendleMCP {
         return createErrorResponse(error);
       }
 
-      const {
-        receiver,
-        slippage,
-        redeem_token,
-        amountIn,
-        tokenOut,
-        chainId = "1",
-      } = params;
+      const { receiver, slippage, redeem_token, amountIn, tokenOut, chainId } =
+        params;
 
       const resp = await callSDK<RedeemData>(`/v2/sdk/${chainId}/redeem`, {
         receiver,
@@ -924,7 +1046,7 @@ export class PendleMCP {
         to: resp.data.tx.to as `0x${string}`,
         abi: ROUTER_ABI,
         data: resp.data.tx.data as `0x${string}`,
-        gas: 15000000n,
+        gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
@@ -1052,9 +1174,9 @@ export class PendleMCP {
       const resp = await callSDK<GetAssetsData>(targetPath, query);
 
       return createSuccessResponse("Successfully retrieved assets", {
-        assets: resp.data.data.assets,
+        assets: resp.data.assets,
         chainId,
-        total: resp.data.data.assets.length,
+        total: resp.data.assets.length,
       });
     } catch (error: any) {
       if (error.response && error.response.data && error.response.data.error) {
@@ -1070,12 +1192,12 @@ export class PendleMCP {
 
       const targetPath = `/v1/${chainId}/markets/active`;
 
-      const resp = await callSDK<GetMarketsData>(targetPath);
+      const data = await callSDK<GetMarketsData>(targetPath);
 
       return createSuccessResponse("Successfully retrieved active markets", {
-        markets: resp.data.data.markets,
+        markets: data.data.markets,
         chainId,
-        total: resp.data.data.markets.length,
+        total: data.data.markets.length,
       });
     } catch (error: any) {
       if (error.response && error.response.data && error.response.data.error) {
@@ -1089,6 +1211,41 @@ export class PendleMCP {
     registerHelloTool(server);
     registerHelloPrompt(server);
     registerHelloResource(server);
+    server.tool(
+      "getUserAddresses",
+      "Get user addresses, you can choose a wallet with chooseWallet",
+      {},
+      async () => {
+        const addresses = await this.getUserAddresses();
+        return addresses;
+      }
+    );
+    server.tool(
+      "chooseWallet",
+      "Choose a wallet, you can get user addresses with getUserAddresses",
+      {
+        address: z.string(),
+      },
+      async ({ address }) => {
+        const wallet = await this.chooseWallet(address as Address);
+        return wallet;
+      }
+    );
+    server.tool(
+      "approveToken",
+      "Approve token spending",
+      {
+        tokenAddress: z.string(),
+        amount: z.string(),
+      },
+      async ({ tokenAddress, amount }) => {
+        const allowance = await this.approveToken(
+          tokenAddress as Address,
+          BigInt(amount)
+        );
+        return allowance;
+      }
+    );
     registerMintTools(server, this);
     registerSwapTools(server, this);
     registerTransferLiquidityTools(server, this);

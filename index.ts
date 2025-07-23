@@ -1,5 +1,5 @@
 import { createMcpServer } from "@osiris-ai/sdk";
-import { MemoryDatabaseAdapter } from "@osiris-ai/sdk";
+import { PostgresDatabaseAdapter } from "@osiris-ai/postgres-sdk";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { config as dotenv } from "dotenv";
 import { PendleMCP } from "./client.js";
@@ -18,7 +18,9 @@ async function start(): Promise<void> {
     auth: {
       useHub: true,
       hubConfig: { baseUrl: hub, clientId, clientSecret },
-      database: new MemoryDatabaseAdapter(),
+      database: new PostgresDatabaseAdapter({
+        connectionString: process.env.DATABASE_URL,
+      }),
     },
     server: {
       port,
