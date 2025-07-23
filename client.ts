@@ -337,18 +337,30 @@ export class PendleMCP {
         tokenIn,
         tokenOut,
         amountIn,
+        enableAggregator = false,
+        aggregators,
         chainId,
       } = params;
 
+      const requestParams: any = {
+        receiver,
+        slippage,
+        tokenIn,
+        tokenOut,
+        amountIn,
+      };
+
+      if (enableAggregator) {
+        requestParams.enableAggregator = enableAggregator;
+      }
+
+      if (aggregators) {
+        requestParams.aggregators = aggregators;
+      }
+
       const resp = await callSDK<SwapData>(
         `/v2/sdk/${chainId}/markets/${market}/swap`,
-        {
-          receiver,
-          slippage,
-          tokenIn,
-          tokenOut,
-          amountIn,
-        }
+        requestParams
       );
 
       const walletClient = createWalletClient({

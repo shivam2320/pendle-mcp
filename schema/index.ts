@@ -15,6 +15,8 @@ export const SwapSchema = {
   tokenIn: z.string(),
   tokenOut: z.string(),
   amountIn: z.string(),
+  enableAggregator: z.boolean().optional().default(false),
+  aggregators: z.string().optional(),
   chainId: z.string().default("1"),
 };
 
@@ -123,6 +125,8 @@ export interface SwapParams {
   tokenIn: string;
   tokenOut: string;
   amountIn: string;
+  enableAggregator?: boolean;
+  aggregators?: string;
   chainId: string;
 }
 
