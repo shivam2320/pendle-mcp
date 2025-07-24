@@ -61,7 +61,7 @@ import {
   GetMarketsParams,
 } from "./schema/index.js";
 
-import { callSDK } from "./utils/helper.js";
+import { callSDK, callSDKData } from "./utils/helper.js";
 import z from "zod";
 import { ERC20_ABI } from "./utils/ERC20_ABI.js";
 import { ROUTER_ADDRESS } from "./utils/constants.js";
@@ -1295,7 +1295,7 @@ export class PendleMCP {
 
       const targetPath = `/v3/${chainId}/assets/all`;
 
-      const resp = await callSDK<GetAssetsData>(targetPath, query);
+      const resp = await callSDKData<GetAssetsData>(targetPath, query);
 
       return createSuccessResponse("Successfully retrieved assets", {
         assets: resp.data.assets,
@@ -1316,7 +1316,7 @@ export class PendleMCP {
 
       const targetPath = `/v1/${chainId}/markets/active`;
 
-      const data = await callSDK<GetMarketsData>(targetPath);
+      const data = await callSDKData<GetMarketsData>(targetPath);
 
       return createSuccessResponse("Successfully retrieved active markets", {
         markets: data.data.markets,

@@ -26,7 +26,10 @@ async function start(): Promise<void> {
       port,
       mcpPath: "/mcp",
       callbackBasePath: "/callback",
-      baseUrl: "http://localhost:3000",
+      baseUrl:
+        process.env.NODE_ENV === "production"
+          ? "https://pendle.mcp.osirislabs.xyz"
+          : "http://localhost:3000",
       logger: (m: string) => console.log(m),
     },
     configure: (s: McpServer) => pendle.configureServer(s),

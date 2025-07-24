@@ -286,6 +286,10 @@ export type GetHistoricalPricesData = {
   results: string;
 };
 
-export type GetAssetsData = { assets: AssetInfo[] };
+export type GetAssetsData = {
+  assets: AssetInfo[];
+};
 
-export type GetMarketsData = { markets: MarketInfo[] };
+export type GetMarketsData = {
+  markets: MarketInfo[];
+};

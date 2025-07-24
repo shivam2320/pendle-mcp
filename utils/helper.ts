@@ -25,3 +25,14 @@ export async function callSDK<Data>(
 
   return response;
 }
+
+export async function callSDKData<Data>(
+  path: string,
+  params: Record<string, any> = {}
+) {
+  const response = await axios.get<Data>(HOSTED_SDK_URL + path, {
+    params,
+  });
+
+  return response;
+}
