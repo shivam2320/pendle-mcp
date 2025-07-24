@@ -2,7 +2,7 @@
 
 # Configuration
 SERVER_USER="pendle"
-SERVER_IP="34.70.113.19"
+SERVER_IP="34.42.196.140"
 SSH_KEY_PATH="~/.ssh/pendle" 
 SERVER_PATH="/home/pendle/app"
 DOCKER_COMPOSE_PROFILE="production"
