@@ -13,11 +13,14 @@ COPY . ./
 # Install dependencies
 RUN pnpm install --no-frozen-lockfile
 
+RUN pnpm run build
+
 # Clean up dev dependencies but preserve workspace structure
 RUN pnpm prune --prod
+
 
 # Expose all MCP server ports 
 EXPOSE 3000
 
 # Default command - will be overridden in docker-compose
-CMD ["node"]
+CMD ["node", "dist/index.js"]
