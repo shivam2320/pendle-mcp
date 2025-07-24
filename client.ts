@@ -3,7 +3,6 @@ import { registerHelloTool } from "./tools/hello-world.js";
 import { registerHelloPrompt } from "./prompts/hello-world.js";
 import { registerHelloResource } from "./resources/hello-world.js";
 import { registerMintTools } from "./tools/mint.js";
-import { registerSwapTools } from "./tools/swap.js";
 import { registerTransferLiquidityTools } from "./tools/transfer-liquidity.js";
 import { registerAddLiquidityTools } from "./tools/add-liquidity.js";
 import { registerAddLiquidityDualTools } from "./tools/add-liquidity-dual.js";
@@ -13,6 +12,8 @@ import { registerRedeemTools } from "./tools/redeem.js";
 import { registerAssetPricesTools } from "./tools/asset-prices.js";
 import { registerAssetsTools } from "./tools/assets.js";
 import { registerMarketsTools } from "./tools/markets.js";
+import { registerSwapPTTools } from "./tools/swap-pt.js";
+import { registerSwapYTTools } from "./tools/swap-yt.js";
 import {
   createWalletClient,
   http,
@@ -25,7 +26,7 @@ import {
   parseUnits,
 } from "viem";
 import { mainnet } from "viem/chains";
-import { createMcpServer, getAuthContext } from "@osiris-ai/sdk";
+import { getAuthContext } from "@osiris-ai/sdk";
 import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
@@ -61,10 +62,12 @@ import {
 } from "./schema/index.js";
 
 import { callSDK } from "./utils/helper.js";
-import { ROUTER_ABI } from "./utils/ROUTER_ABI.js";
 import z from "zod";
 import { ERC20_ABI } from "./utils/ERC20_ABI.js";
 import { ROUTER_ADDRESS } from "./utils/constants.js";
+import { SWAP_PT_ABI } from "./utils/ABIs/SWAP_PT_ABI.js";
+import { MISC_ABI } from "./utils/ABIs/MISC_ABI.js";
+import { LIQUIDITY_ABI } from "./utils/ABIs/LIQUIDITY_ABI.js";
 
 export class PendleMCP {
   hubBaseUrl: string;
@@ -288,7 +291,7 @@ export class PendleMCP {
     }
   }
 
-  async swap(params: SwapParams): Promise<CallToolResult> {
+  async swapPT(params: SwapParams): Promise<CallToolResult> {
     try {
       const { token, context } = getAuthContext("osiris");
       if (!token || !context) {
@@ -371,14 +374,123 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: SWAP_PT_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        SWAP_PT_ABI,
+        serializedTx,
+        this.chain,
+        account.address
+      );
+      const hash = await walletClient.sendRawTransaction({
+        serializedTransaction: signedTx as `0x${string}`,
+      });
+      return createSuccessResponse("Successfully swapped tokens", {
+        hash: hash,
+      });
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        return createErrorResponse(error.response.data.error);
+      }
+      throw new Error(`Swap failed: ${error}`);
+    }
+  }
+
+  async swapYT(params: SwapParams): Promise<CallToolResult> {
+    try {
+      const { token, context } = getAuthContext("osiris");
+      if (!token || !context) {
+        throw new Error("No token or context found");
+      }
+      console.log(
+        JSON.stringify(
+          {
+            hubBaseUrl: this.hubBaseUrl,
+            accessToken: token.access_token,
+            deploymentId: context.deploymentId,
+          },
+          null,
+          2
+        )
+      );
+
+      const wallet = this.walletToSession[context.sessionId];
+      if (!wallet) {
+        const error = new Error(
+          "No wallet found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoWalletFoundError";
+        return createErrorResponse(error);
+      }
+
+      const client = new EVMWalletClient(
+        this.hubBaseUrl,
+        token.access_token,
+        context.deploymentId
+      );
+
+      const account = await client.getViemAccount(wallet, this.chain);
+      if (!account) {
+        const error = new Error(
+          "No account found, you need to choose a wallet first with chooseWallet"
+        );
+        error.name = "NoAccountFoundError";
+        return createErrorResponse(error);
+      }
+
+      const {
+        receiver,
+        slippage,
+        market,
+        tokenIn,
+        tokenOut,
+        amountIn,
+        enableAggregator = false,
+        aggregators,
+        chainId,
+      } = params;
+
+      const requestParams: any = {
+        receiver,
+        slippage,
+        tokenIn,
+        tokenOut,
+        amountIn,
+      };
+
+      if (enableAggregator) {
+        requestParams.enableAggregator = enableAggregator;
+      }
+
+      if (aggregators) {
+        requestParams.aggregators = aggregators;
+      }
+
+      const resp = await callSDK<SwapData>(
+        `/v2/sdk/${chainId}/markets/${market}/swap`,
+        requestParams
+      );
+
+      const walletClient = createWalletClient({
+        account: account,
+        chain: mainnet,
+        transport: http(),
+      });
+
+      const preparedTx = await walletClient.prepareTransactionRequest({
+        to: resp.data.tx.to as `0x${string}`,
+        abi: SWAP_PT_ABI,
+        data: resp.data.tx.data as `0x${string}`,
+        gas: 800000n,
+      });
+
+      const serializedTx = serializeTransaction(preparedTx as any);
+      const signedTx = await client.signTransaction(
+        SWAP_PT_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -458,14 +570,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: MISC_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        MISC_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -573,14 +685,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: MISC_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        MISC_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -678,14 +790,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: LIQUIDITY_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        LIQUIDITY_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -780,14 +892,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: LIQUIDITY_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        LIQUIDITY_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -873,14 +985,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: LIQUIDITY_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        LIQUIDITY_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -966,14 +1078,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: LIQUIDITY_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        LIQUIDITY_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -1056,14 +1168,14 @@ export class PendleMCP {
 
       const preparedTx = await walletClient.prepareTransactionRequest({
         to: resp.data.tx.to as `0x${string}`,
-        abi: ROUTER_ABI,
+        abi: MISC_ABI,
         data: resp.data.tx.data as `0x${string}`,
         gas: 800000n,
       });
 
       const serializedTx = serializeTransaction(preparedTx as any);
       const signedTx = await client.signTransaction(
-        ROUTER_ABI,
+        MISC_ABI,
         serializedTx,
         this.chain,
         account.address
@@ -1259,7 +1371,8 @@ export class PendleMCP {
       }
     );
     registerMintTools(server, this);
-    registerSwapTools(server, this);
+    registerSwapPTTools(server, this);
+    registerSwapYTTools(server, this);
     registerTransferLiquidityTools(server, this);
     registerAddLiquidityTools(server, this);
     registerAddLiquidityDualTools(server, this);

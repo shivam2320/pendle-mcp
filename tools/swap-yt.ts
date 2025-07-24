@@ -12,48 +12,58 @@ import { PendleMCP } from "../client.js";
 import { SwapSchema } from "../schema/index.js";
 const logger = new McpLogger("pendle-mcp", LOG_LEVELS.INFO);
 
-export function registerSwapTools(
+export function registerSwapYTTools(
   server: McpServer,
   pendleMCP: PendleMCP
 ): void {
   logger.info("📝 Registering swap tools...");
 
   server.tool(
-    "swap",
-    "Swap tokens",
+    "swapYT",
+    "Swap to YT tokens",
     SwapSchema,
-    async ({ receiver, slippage, market, tokenIn, tokenOut, amountIn }) => {
+    async ({
+      receiver,
+      slippage,
+      market,
+      tokenIn,
+      tokenOut,
+      amountIn,
+      chainId,
+    }) => {
       try {
-        logger.toolCalled("swap", {
+        logger.toolCalled("swapYT", {
           receiver,
           slippage,
           market,
           tokenIn,
           tokenOut,
           amountIn,
+          chainId,
         });
 
-        const result = await pendleMCP.swap({
+        const result = await pendleMCP.swapYT({
           receiver,
           slippage,
           market,
           tokenIn,
           tokenOut,
           amountIn,
+          chainId,
         });
 
-        logger.toolCompleted("swap");
+        logger.toolCompleted("swapYT");
         return createSuccessResponse(
           `✅ Swap tokens successfully for ${receiver}`,
           result
         );
       } catch (error) {
-        return handleToolError("swap", error);
+        return handleToolError("swapYT", error);
       }
     }
   );
 
-  logger.info("✅ All swap tools registered successfully");
+  logger.info("✅ All swapYT tools registered successfully");
 }
 
 /**
