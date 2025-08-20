@@ -28,7 +28,7 @@ async function start(): Promise<void> {
       callbackBasePath: "/callback",
       baseUrl:
         process.env.NODE_ENV === "production"
-          ? "https://pendle.mcp.osirislabs.xyz"
+          ? "https://pendle-mcp.osirislabs.xyz"
           : "http://localhost:3000",
       logger: (m: string) => console.log(m),
     },

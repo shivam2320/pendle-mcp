@@ -4,6 +4,8 @@ pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
+deploy.sh
+
 # Build outputs
 dist/
 build/
