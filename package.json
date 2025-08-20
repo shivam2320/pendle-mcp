@@ -23,7 +23,7 @@
     "@modelcontextprotocol/sdk": "latest",
     "@noble/curves": "latest",
     "@osiris-ai/postgres-sdk": "^0.1.0",
-    "@osiris-ai/sdk": "latest",
+    "@osiris-ai/sdk": "^0.1.10",
     "@osiris-ai/web3-evm-sdk": "^0.1.0",
     "axios": "^1.10.0",
     "dotenv": "latest",

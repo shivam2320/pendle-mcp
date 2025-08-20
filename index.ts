@@ -31,6 +31,18 @@ async function start(): Promise<void> {
           ? "https://pendle-mcp.osirislabs.xyz"
           : "http://localhost:3000",
       logger: (m: string) => console.log(m),
+      corsOptions: {
+        origin: "*",
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Requested-With",
+          "Accept",
+          "Origin",
+        ],
+      },
     },
     configure: (s: McpServer) => pendle.configureServer(s),
   });
