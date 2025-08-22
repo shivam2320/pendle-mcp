@@ -24,7 +24,7 @@ export function registerAssetPricesTools(
 
   server.tool(
     "get_asset_prices",
-    "Get current asset prices for Pendle tokens",
+    "Retrieve real-time pricing data for Pendle tokens including PT, YT, SY tokens, and underlying assets across supported blockchain networks. This tool provides current market prices essential for trading decisions, portfolio valuation, and yield calculations. Supports querying specific token addresses or fetching comprehensive price data for all tokens on a given chain.",
     GetAssetPricesSchema,
     async ({ chainId, addresses }) => {
       try {
@@ -51,7 +51,7 @@ export function registerAssetPricesTools(
 
   server.tool(
     "get_historical_prices",
-    "Get historical price data for Pendle tokens",
+    "Retrieve historical price data and charts for Pendle tokens with customizable time ranges and granularity. This tool enables technical analysis, performance tracking, and yield trend analysis by providing historical pricing data at hourly, daily, or weekly intervals. Essential for understanding token price movements, calculating returns, and making informed investment decisions.",
     GetHistoricalPricesSchema,
     async ({ chainId, address, timeFrame, timestampStart, timestampEnd }) => {
       try {

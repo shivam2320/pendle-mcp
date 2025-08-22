@@ -21,7 +21,7 @@ export function registerRemoveLiquidityTools(
 
   server.tool(
     "remove_liquidity",
-    "Remove liquidity from Pendle markets",
+    "Remove liquidity from Pendle markets by burning LP tokens to withdraw your deposited assets. This tool allows you to exit your liquidity position and receive underlying tokens, SY tokens, or other supported assets in return. You'll receive your proportional share of the pool plus any accumulated fees and rewards from providing liquidity.",
     RemoveLiquiditySchema,
     async ({ receiver, slippage, market, tokenOut, amountIn, chainId }) => {
       try {

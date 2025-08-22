@@ -20,7 +20,7 @@ export function registerSwapPTTools(
 
   server.tool(
     "swapPT",
-    "Swap to PT tokens",
+    "Swap tokens to Principal Tokens (PT) on Pendle markets. PT tokens represent the principal value of yield-bearing assets and can be redeemed at maturity for the underlying asset. This tool enables swapping from any supported token (underlying assets, SY tokens, or YT tokens) into PT tokens with customizable slippage protection and optional DEX aggregator routing for optimal pricing.",
     SwapSchema,
     async ({
       receiver,

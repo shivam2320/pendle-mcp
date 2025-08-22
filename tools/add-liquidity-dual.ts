@@ -21,7 +21,7 @@ export function registerAddLiquidityDualTools(
 
   server.tool(
     "add_liquidity_dual",
-    "Add dual liquidity to Pendle markets using token and PT",
+    "Add dual-sided liquidity to Pendle markets by providing both underlying tokens and Principal Tokens (PT) simultaneously. This approach allows for more balanced liquidity provision, reducing price impact and ensuring optimal capital efficiency. Ideal for users who already hold both underlying assets and PT tokens and want to maximize their liquidity provision efficiency.",
     AddLiquidityDualSchema,
     async ({
       receiver,

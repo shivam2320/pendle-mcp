@@ -21,7 +21,7 @@ export function registerMintTools(
 
   server.tool(
     "mint",
-    "Mint tokens using Pendle protocol",
+    "Mint Principal Tokens (PT) or Yield Tokens (YT) by depositing underlying assets or SY tokens into Pendle markets. Minting allows you to separate the principal and yield components of yield-bearing assets, enabling sophisticated DeFi strategies. PT tokens can be held until maturity for guaranteed principal, while YT tokens capture all yield generated until expiry.",
     MintSchema,
     async ({ receiver, mint_token, slippage, tokenIn, amountIn, chainId }) => {
       try {

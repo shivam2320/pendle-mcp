@@ -21,7 +21,7 @@ export function registerRedeemTools(
 
   server.tool(
     "redeem",
-    "Redeem PT and YT tokens to SY or underlying tokens",
+    "Redeem matured Principal Tokens (PT) or Yield Tokens (YT) back to underlying assets or SY tokens after market expiry. This tool allows you to convert your PT/YT positions back to the original underlying assets once the market has reached maturity, realizing the accumulated principal value and any remaining yield. Only available for markets that have passed their expiry date.",
     RedeemSchema,
     async ({
       receiver,

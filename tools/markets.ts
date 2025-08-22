@@ -21,7 +21,7 @@ export function registerMarketsTools(
 
   server.tool(
     "get_markets",
-    "Get list of active Pendle markets",
+    "Retrieve comprehensive information about all active Pendle markets on specified blockchain networks. This tool provides essential market data including trading pairs, expiry dates, liquidity information, and associated PT/YT token addresses. Critical for market analysis, liquidity assessment, and identifying trading opportunities across different yield-bearing assets and expiry periods within the Pendle protocol.",
     GetMarketsSchema,
     async ({ chainId }) => {
       try {

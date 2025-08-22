@@ -21,7 +21,7 @@ export function registerRemoveLiquidityDualTools(
 
   server.tool(
     "remove_liquidity_dual",
-    "Remove dual liquidity from Pendle markets to token and PT",
+    "Remove dual-sided liquidity from Pendle markets to receive both underlying tokens and Principal Tokens (PT) proportionally. This tool burns your LP tokens and returns both the underlying asset and PT tokens that were originally provided as liquidity, maintaining the dual-sided nature of your original deposit while preserving token composition.",
     RemoveLiquidityDualSchema,
     async ({ receiver, slippage, market, tokenOut, amountIn, chainId }) => {
       try {

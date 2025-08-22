@@ -21,7 +21,7 @@ export function registerAssetsTools(
 
   server.tool(
     "get_assets",
-    "Get list of Pendle assets with filtering options",
+    "Discover and explore all available Pendle assets including Principal Tokens (PT), Yield Tokens (YT), and Standardized Yield (SY) tokens across supported blockchain networks. This comprehensive tool provides detailed asset information with advanced filtering capabilities by expiry status, zappability, asset type, and search queries. Essential for asset discovery, market research, and finding investment opportunities within the Pendle ecosystem.",
     GetAssetsSchema,
     async ({
       chainId,

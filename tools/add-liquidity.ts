@@ -21,7 +21,7 @@ export function registerAddLiquidityTools(
 
   server.tool(
     "add_liquidity",
-    "Add liquidity to Pendle markets",
+    "Add single-sided liquidity to Pendle markets by depositing tokens to earn LP rewards and trading fees. This tool allows you to provide liquidity using underlying assets, SY tokens, or PT tokens, automatically balancing your deposit across the PT/YT liquidity pool. Liquidity providers earn fees from swaps and can receive additional incentives. Supports Zero Price Impact (ZPI) mode for efficient large deposits.",
     AddLiquiditySchema,
     async ({ receiver, slippage, market, tokenIn, amountIn, zpi, chainId }) => {
       try {

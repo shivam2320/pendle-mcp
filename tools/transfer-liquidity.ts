@@ -21,7 +21,7 @@ export function registerTransferLiquidityTools(
 
   server.tool(
     "transfer_liquidity",
-    "Transfer liquidity between Pendle markets",
+    "Transfer liquidity positions between different Pendle markets, enabling portfolio rebalancing and yield strategy optimization. This tool allows you to move LP tokens, PT tokens, and YT tokens from one market to another (typically with different expiry dates or underlying assets) while maintaining your exposure to Pendle's yield opportunities. Supports Zero Price Impact (ZPI) mode and DEX aggregator routing for efficient cross-market transfers.",
     TransferLiquiditySchema,
     async ({
       receiver,
